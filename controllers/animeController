@@ -1,0 +1,194 @@
+const Anime = require("../models/anime");
+const Item = require("../models/item")
+const asyncHandler = require("express-async-handler");
+const { body, validationResult } = require("express-validator");
+
+// Display list of all Categories.
+exports.anime_index = asyncHandler(async (req, res, next) => {
+  const allAnimes = await Anime.find().sort({ name: 1 }).exec();
+
+  res.render("animelist", {
+    title: "Animes",
+    animelist: allAnimes
+  })
+});
+
+// Display detail page for a specific Anime.
+exports.anime_details = asyncHandler(async (req, res, next) => {
+  const [anime, allItemsinAnime] = await Promise.all([
+    Anime.findById(req.params.id).exec(),
+    Item.find({ anime: req.params.id }, "name description")
+      .sort({ name: 1 })
+      .populate("category")
+      .exec(),
+  ]);
+
+  if (anime === null) {
+    // No results.
+    const err = new Error("Anime not found");
+    err.status = 404;
+    return next(err);
+  }
+
+  res.render("animedetails", {
+    title: "Search by Anime",
+    anime: anime,
+    anime_items: allItemsinAnime,
+  });
+});
+
+// Display Anime create form on GET.
+exports.anime_create_get = (req, res, next) => {
+  res.render("anime_form", {title: "Add Anime"})
+};
+
+// Handle Anime create on POST.
+exports.anime_create_post = [
+  // Validate and sanitize fields.
+  body("name")
+    .trim()
+    .isLength({ min: 1 })
+    .escape()
+    .withMessage("Name is required."),
+  body("summary")
+    .trim()
+    .isLength({ min: 1 })
+    .escape()
+    .withMessage("Summary is Required."),
+
+  // Process request after validation and sanitization.
+  asyncHandler(async (req, res, next) => {
+    // Extract the validation errors from a request.
+    const errors = validationResult(req);
+
+    // Create Anime object with escaped and trimmed data
+    const anime = new Anime({
+      name: req.body.name,
+      summary: req.body.summary,
+    });
+
+    if (!errors.isEmpty()) {
+      // There are errors. Render form again with sanitized values/errors messages.
+      res.render("anime_form", {
+        title: "Add Anime",
+        anime: anime,
+        errors: errors.array(),
+      });
+      return;
+    } else {
+      const animeExists = await Anime.findOne({ name: req.body.name })
+        .collation({ locale: "en", strength: 2 })
+        .exec();
+      if (animeExists) {
+        res.redirect(animeExists.url);
+      } else {
+        await anime.save();
+        res.redirect(anime.url);
+      }
+    }
+  }),
+];
+
+
+// Display Anime delete form on GET.
+exports.anime_delete_get = asyncHandler(async (req, res, next) => {
+  const [anime, allItems] = await Promise.all([
+    Anime.findById(req.params.id).exec(),
+    Item.find({ anime: req.params.id }, "name description").exec(),
+  ]);
+
+  if (anime === null) {
+    res.redirect("/animes")
+  }
+
+  res.render("anime_delete",{
+    title: "Delete Item",
+    anime: anime,
+    allItems: allItems,
+  })
+});
+
+// Handle Anime delete on POST.
+exports.anime_delete_post = asyncHandler(async (req, res, next) => {
+  const [anime, allItems] = await Promise.all([
+    Anime.findById(req.params.id).exec(),
+    Item.find({ anime: req.params.id }, "name description").exec(),
+  ]);
+
+  if (allItems.length > 0) {
+    res.render("anime_delete",{
+      title: "Delete Item",
+      anime: anime,
+      allItems: allItems,
+    })
+    return;
+  } else {
+    await Anime.findOneAndDelete({_id: req.body.animeid})
+    res.redirect("/animes")
+  }
+});
+
+// Display Anime update form on GET.
+exports.anime_update_get = asyncHandler(async (req, res, next) => {
+  const anime = await Anime.findById(req.params.id).exec();
+
+  if (anime === null) {
+    const err = new Error("Anime not found");
+    err.status = 404;
+    return next(err);
+  }
+
+  res.render("anime_form", {
+    title: "Update Anime",
+    anime: anime,
+  })
+});
+
+// Handle Anime update on POST.
+exports.anime_update_post = [
+  // Validate and sanitize fields.
+  body("name")
+    .trim()
+    .isLength({ min: 1 })
+    .escape()
+    .withMessage("Name is required."),
+  body("summary")
+    .trim()
+    .isLength({ min: 1 })
+    .escape()
+    .withMessage("Summary is Required."),
+
+  // Process request after validation and sanitization.
+  asyncHandler(async (req, res, next) => {
+    // Extract the validation errors from a request.
+    const errors = validationResult(req);
+
+    // Create Anime object with escaped and trimmed data
+    const anime = new Anime({
+      name: req.body.name,
+      summary: req.body.summary,
+      _id: req.params.id
+    });
+
+    if (!errors.isEmpty()) {
+      // There are errors. Render form again with sanitized values/errors messages.
+      res.render("anime_form", {
+        title: "Update Anime",
+        anime: anime,
+        errors: errors.array(),
+      });
+      return;
+    } else {
+      const animeExists = await Anime.findOne({ name: req.body.name })
+        .collation({ locale: "en", strength: 2 })
+        .exec();
+      if (animeExists) {
+        res.redirect(animeExists.url);
+      } else {
+        const updatedAnime = await Anime.findByIdAndUpdate(req.params.id, anime, {});
+        res.redirect(updatedAnime.url);
+      }
+    }
+  }),
+];
+

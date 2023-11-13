@@ -1,0 +1,33 @@
+extends layout
+
+block content
+
+  h1= title
+  p #{anime.name}
+
+  div(style='margin-left:20px;margin-top:20px')
+
+    h4 Items
+
+    dl
+      each item in anime_items
+        dt
+          a(href=item.url) #{item.name}
+        dd #{item.description}
+        dd 
+          a(href=item.category[0].url) #{item.category[0].name}
+
+        script.
+          console.log("anime_items:", !{JSON.stringify(item)});
+
+      else
+        p This anime has no items.
+    
+    script.
+      console.log("anime_url:", !{JSON.stringify(anime.url)});
+
+    hr
+    p
+      a(href=anime.url+'/delete') Delete Anime
+    p
+      a(href=anime.url+'/update') Update Anime

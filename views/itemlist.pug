@@ -1,0 +1,13 @@
+extends layout
+
+block content
+  h1= title
+
+  div 
+  ul
+    each item in itemlist
+      li
+        a(href=item.url) #{item.name}
+
+    else
+      li There are no Items.

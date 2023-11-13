@@ -1,0 +1,20 @@
+extends layout
+
+block content
+  h1 #{item.name}
+
+  p #[strong Anime:]
+    a(href=item.anime.url) #{item.anime.name}
+  p #[strong Description:] #{item.description}
+  p #[strong Price:] #{item.price}
+  p #[strong Inventory:] #{item.inventory}
+  p #[strong Category:] 
+    a(href=item.category[0].url) #{item.category[0].name}
+
+
+  hr
+  p
+    a(href=item.url+'/delete') Delete Item
+  p
+    a(href=item.url+'/update') Update Item
+

@@ -1,0 +1,13 @@
+extends layout
+
+block content
+  h1= title
+
+  div 
+  ul
+    each anime in animelist
+      li
+        a(href=anime.url) #{anime.name}
+
+    else
+      li There are no animes.
